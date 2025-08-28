@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         Amazon EAN Barcode Generator
 // @namespace    https://github.com/nitatemic
-// @version      1.0
-// @description  Automatically generates a barcode next to the EAN (ISBN) code on book pages on Amazon. And uses JsBarcode to render the barcode visually.
+// @version      2.0
+// @description  Automatically generates both EAN (ISBN) and ASIN barcodes on Amazon book pages. Features dual barcode display with legends and enhanced styling.
 // @author       Nitatemic
 // @license      GPL-3.0-only
 // @match        https://www.amazon.*/*
@@ -22,19 +22,90 @@
             position: fixed;
             bottom: 20px;
             left: 20px;
-            background: white;
-            padding: 10px;
-            border: 1px solid #ccc;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            background: linear-gradient(135deg, #f8f9ff 0%, #e8f2ff 100%);
+            padding: 15px;
+            border: 2px solid #4a90e2;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.15);
             z-index: 9999;
+            font-family: Arial, sans-serif;
+            min-width: 300px;
         }
         #barcode-close {
             cursor: pointer;
             float: right;
             font-weight: bold;
             margin-left: 10px;
+            color: #666;
+            font-size: 18px;
+            line-height: 1;
+        }
+        #barcode-close:hover {
+            color: #000;
+        }
+        .barcode-section {
+            margin: 10px 0;
+            text-align: center;
+            padding: 10px;
+            background: white;
+            border-radius: 5px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .barcode-label {
+            font-size: 12px;
+            font-weight: bold;
+            color: #333;
+            margin-top: 8px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .barcode-value {
+            font-size: 11px;
+            color: #666;
+            margin-top: 2px;
+            font-family: monospace;
+        }
+        .barcode-title {
+            text-align: center;
+            color: #4a90e2;
+            font-weight: bold;
+            font-size: 14px;
+            margin-bottom: 15px;
+            border-bottom: 1px solid #e0e0e0;
+            padding-bottom: 5px;
         }
     `);
+
+	/**
+	 * Extraction de l'ASIN à partir de l'URL ou des métadonnées de la page
+	 */
+	function extractASIN() {
+		// Méthode 1: Extraire de l'URL
+		const urlMatch = window.location.pathname.match(/\/([A-Z0-9]{10})(?:\/|$)/);
+		if (urlMatch) {
+			return urlMatch[1];
+		}
+		
+		// Méthode 2: Chercher dans les métadonnées
+		const metaElement = document.querySelector('meta[name="ASIN"]');
+		if (metaElement) {
+			return metaElement.content;
+		}
+		
+		// Méthode 3: Chercher dans les attributs data-asin
+		const asinElement = document.querySelector('[data-asin]');
+		if (asinElement && asinElement.getAttribute('data-asin').match(/^[A-Z0-9]{10}$/)) {
+			return asinElement.getAttribute('data-asin');
+		}
+		
+		// Méthode 4: Chercher dans le texte de la page
+		const textMatch = document.body.innerText.match(/ASIN[:\s]*([A-Z0-9]{10})/i);
+		if (textMatch) {
+			return textMatch[1];
+		}
+		
+		return null;
+	}
 
 	/**
 	 * Extraction de l'ISBN à partir de la nouvelle div.
@@ -85,7 +156,7 @@
 		return null;
 	}
 
-	function createBarcode(isbn) {
+	function createBarcodes(isbn, asin) {
 		const container = document.createElement('div');
 		container.id = 'barcode-container';
 
@@ -94,19 +165,78 @@
 		closeButton.innerHTML = '×';
 		closeButton.onclick = () => container.remove();
 
-		const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-		svg.id = 'barcode';
+		const title = document.createElement('div');
+		title.className = 'barcode-title';
+		title.textContent = 'Codes-barres Amazon';
 
 		container.appendChild(closeButton);
-		container.appendChild(svg);
-		document.body.appendChild(container);
+		container.appendChild(title);
 
-		JsBarcode(svg, isbn, {
-			format: "EAN13",
-			displayValue: true,
-			fontSize: 12,
-			margin: 5
-		});
+		// Section EAN/ISBN
+		if (isbn) {
+			const isbnSection = document.createElement('div');
+			isbnSection.className = 'barcode-section';
+			
+			const isbnSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+			isbnSvg.id = 'barcode-isbn';
+			
+			const isbnLabel = document.createElement('div');
+			isbnLabel.className = 'barcode-label';
+			isbnLabel.textContent = 'EAN/ISBN';
+			
+			const isbnValue = document.createElement('div');
+			isbnValue.className = 'barcode-value';
+			isbnValue.textContent = isbn;
+
+			isbnSection.appendChild(isbnSvg);
+			isbnSection.appendChild(isbnLabel);
+			isbnSection.appendChild(isbnValue);
+			container.appendChild(isbnSection);
+
+			JsBarcode(isbnSvg, isbn, {
+				format: "EAN13",
+				displayValue: false,
+				fontSize: 12,
+				margin: 5,
+				height: 60,
+				background: "#ffffff",
+				lineColor: "#000000"
+			});
+		}
+
+		// Section ASIN
+		if (asin) {
+			const asinSection = document.createElement('div');
+			asinSection.className = 'barcode-section';
+			
+			const asinSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+			asinSvg.id = 'barcode-asin';
+			
+			const asinLabel = document.createElement('div');
+			asinLabel.className = 'barcode-label';
+			asinLabel.textContent = 'ASIN';
+			
+			const asinValue = document.createElement('div');
+			asinValue.className = 'barcode-value';
+			asinValue.textContent = asin;
+
+			asinSection.appendChild(asinSvg);
+			asinSection.appendChild(asinLabel);
+			asinSection.appendChild(asinValue);
+			container.appendChild(asinSection);
+
+			JsBarcode(asinSvg, asin, {
+				format: "CODE128",
+				displayValue: false,
+				fontSize: 12,
+				margin: 5,
+				height: 60,
+				background: "#ffffff",
+				lineColor: "#000000"
+			});
+		}
+
+		document.body.appendChild(container);
 	}
 
 	function init() {
@@ -114,9 +244,13 @@
 		if (!document.getElementById('dp') && !document.getElementById('rpi-attribute-book_details-isbn13')) return;
 
 		const isbn = extractISBN();
-		if (isbn) {
-			console.log('ISBN trouvé:', isbn);
-			createBarcode(isbn);
+		const asin = extractASIN();
+		
+		if (isbn || asin) {
+			console.log('Codes trouvés - ISBN:', isbn, 'ASIN:', asin);
+			createBarcodes(isbn, asin);
+		} else {
+			console.log('Aucun code trouvé (ISBN ou ASIN)');
 		}
 	}
 
