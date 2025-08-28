@@ -27,7 +27,7 @@ This userscript automatically generates a barcode next to the EAN (ISBN) code on
 
 
 3. Click on the link below to install the script:
-    - [Install the Script](https://github.com/nitatemic/Amazon-EAN-Barcode-Generator/raw/main/amazon-barcode-generator.user.js)
+    - [Install the Script](https://github.com/nitatemic/Amazon-EAN-Barcode-Generator/raw/refs/heads/master/Amazon-barcode-generator.user.js)
 
 4. Visit a book page on Amazon (e.g., [Rent-a-Girlfriend Volume 3](https://www.amazon.fr/Rent-Girlfriend-T03-MIYAJIMA-REIJI/dp/2490676903)) to see it in action!
 
